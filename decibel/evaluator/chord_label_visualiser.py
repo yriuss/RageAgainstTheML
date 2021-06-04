@@ -121,6 +121,12 @@ def export_result_image(song: Song, chords_vocabulary: ChordVocabulary, midi: bo
     :param audio: Audio ACE method
     :param df: Show all DF results?
     """
+    sum_csr = 0
+    sum_ovs = 0
+    sum_uns = 0
+    sum_seg = 0
+    Total = 0
+
     if filehandler.file_exists(filehandler.get_lab_visualisation_path(song, audio)):
         return song.title + " was already visualised for the ACE method " + audio + "."
 
@@ -174,15 +180,23 @@ def export_result_image(song: Song, chords_vocabulary: ChordVocabulary, midi: bo
         label_data.append({'name': audio, 'index': i,
                            'lab_path': filehandler.get_full_mirex_chord_labs_path(song, audio),
                            'csr': csr, 'ovs': ovs, 'uns': uns, 'seg': seg})
-
+    
         for selection_name in 'all', 'best':
             for combination_name in 'rnd', 'mv', 'df':
                 df_lab_path = filehandler.get_data_fusion_path(song.key, combination_name, selection_name, audio)
                 csr, ovs, uns, seg = evaluate(song.full_ground_truth_chord_labs_path, df_lab_path)
+                Total+=1
+                sum_csr = csr + sum_csr
+                sum_ovs = ovs + sum_ovs
+                sum_uns = uns + sum_uns
+                sum_seg = seg + sum_seg
                 label_data.append({'name': audio + '-' + combination_name.upper() + '-' + selection_name.upper(),
                                    'index': i, 'lab_path': df_lab_path,
                                    'csr': csr, 'ovs': ovs, 'uns': uns, 'seg': seg})
-
+    avg_csr = sum_csr/Total
+    avg_ovs = sum_ovs/Total
+    avg_uns = sum_uns/Total
+    avg_seg = sum_seg/Total
     # Fill a numpy array with chord labels for each of the lab files
     chord_matrix = np.zeros((len(label_data), nr_of_samples), dtype=int)
     for lab_nr in range(len(label_data)):
@@ -204,5 +218,5 @@ def export_result_image(song: Song, chords_vocabulary: ChordVocabulary, midi: bo
     plt1 = _show_chord_sequences(song, all_chords, best_indices, names, results, alphabet)
 
     plt1.savefig(filehandler.get_lab_visualisation_path(song, audio), bbox_inches="tight", pad_inches=0)
-
+    print(avg_csr,avg_ovs,avg_seg,avg_uns)
     return song.title + " was visualised for the ACE method " + audio + "."

@@ -151,6 +151,7 @@ def evaluate_midis(all_songs) -> None:
 
     :param all_songs: All songs in the data set
     """
+    
     for segmentation_type in 'bar', 'beat':
         result_csv_path = filehandler.MIDILABS_RESULTS_PATHS[segmentation_type]
         if not path.isfile(result_csv_path):
@@ -168,6 +169,7 @@ def evaluate_midis(all_songs) -> None:
                         # Calculate CSR and write
                         csr, overseg, underseg, seg = evaluate(song.full_ground_truth_chord_labs_path,
                                                                midi_lab_path)
+                        
                         write_file.write(
                             '{0};{1};{2};{3};{4};{5};{6};{7};{8}\n'.format(
                                 str(song_key), str(song.duration), str(midi_name), str(alignment_score),
