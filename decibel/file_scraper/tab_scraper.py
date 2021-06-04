@@ -3,45 +3,31 @@ This module contains all the methods you need for scraping either a single tab f
 from the Internet.
 """
 
-from selenium import webdriver
+from decibel.import_export.filehandler import TABS_FOLDER, MUSIC_INPUT
 from os import path
+import requests
+import re
+from decibel.file_scraper.crawler import crawler
+from os import path, listdir
 
-
-def download_tab(tab_url: str, tab_directory: str, tab_name: str) -> (bool, str):
+def music_input():
     """
-    Download a tab file from the Internet, using the tab_url and place it in the tab_directory, called tab_name.
-    Return a message indicating success or failure.
-
-    :param tab_url: Location of the tab file on the Internet
-    :param tab_directory: Local directory where the tab file should be placed on your machine
-    :param tab_name: File name of your tab file
-    :return: Boolean and str message, indicating success or failure
+    Prepare .mp3 input for estimation
     """
-
-    target_path = path.join(tab_directory, tab_name)
-    target_path = "/home/diogenes/Documents/DECIBEL/Data/Input/" + target_path
-
-    if path.isfile(target_path):
-        return False, None
-
-    try:
-
-        browser = webdriver.Firefox()
-        
-        browser.get(tab_url)
-
-        # tab_text = browser.find_element_by_xpath("//pre[@class='_3F2CP _1rDYL']").text
-        tab_text = browser.find_element_by_xpath("//code[@class='_3enQP']").text
-        # _3F2CP _1rDYL _3F2CP _1rDYL _3F2CP _3hukP
-        browser.close()
-
-        with open(target_path, 'w') as f:
-            f.write(tab_text)
-    except Exception:
-        browser.quit()
-        return False, 'Error downloading ' + tab_name + ' on ' + tab_url
-    return True, 'Download succeeded'
-
+    result = []
+    music_name = []
+    all_tab_names = []
+    for mp3_file in listdir(MUSIC_INPUT):
+        if mp3_file.endswith(".mp3"):
+            mp3_name = mp3_file.replace(".mp3","")
+            music_name.append(mp3_name)
+            result.append(mp3_name)
+            links = crawler(mp3_name)
+            tab_names = []
+            for i in range(len(links)):
+                tab_names.append(download_tab(links[i]))
+            all_tab_names.append(tab_names)
+    return result, all_tab_names
 
 def download_data_set_from_csv(csv_path: str, tab_directory: str):
     """
@@ -73,3 +59,20 @@ def download_data_set_from_csv(csv_path: str, tab_directory: str):
                 print(message)
 
     print(str(nr_successful) + ' tab files were downloaded successfully. ' + str(nr_unsuccessful) + ' failed.')
+
+
+def download_tab(tab_url):
+    site_code = requests.get(tab_url)
+    last_slash_idx = tab_url.rfind('/')
+    tab_name = tab_url[last_slash_idx + 1:]
+    beginning = "content&quot;:&quot;"
+    end = "&quot;"
+    start_index = site_code.text.find(beginning) + len(beginning) + 1
+    start_index = site_code.text[start_index:].find("[Intro]") + start_index
+    end_index = site_code.text[start_index:].find(end) + start_index
+    content = site_code.text[start_index:end_index]
+    filtered_content = content.replace("[tab]","").replace("[/tab]","").replace("[ch]","").replace("[/ch]","").replace("\\n","\n").replace("\\r","\r")
+    if( not path.isfile(path.join(TABS_FOLDER,tab_name+".txt"))):
+        with open(path.join(TABS_FOLDER,tab_name+".txt"), 'w') as f:
+                f.write(filtered_content)
+    return tab_name
