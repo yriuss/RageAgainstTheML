@@ -83,12 +83,6 @@ def _transpose_chord_label(chord_label: int, nr_semitones_higher: int, alphabet:
         key += nr_semitones_higher
         if key >= 12:
             key -= 12
-    elif alphabet.chord_vocabulary_name == 'All':
-        mode = int((chord_label - 1) / 12)
-        key = (chord_label - 1) % 12
-        key += nr_semitones_higher
-        if key >= 12:
-            key -= 12
         return 12 * mode + key + 1
 
     raise NotImplementedError('This is not (yet?) supported for chord vocabularies other than "MajMin".')
@@ -160,6 +154,7 @@ def train(chord_vocabulary: ChordVocabulary, train_songs: Dict[int, Song]) -> HM
             # Iterate over the beats, fill chroma_beat_matrix_per_chord and chord_index_list
             for frame_index in range(features.shape[0]):
                 chroma = features[frame_index, 1:13].astype(float)
+                teste = Chord.from_harte_chord_string(features[frame_index, 13])
                 chord_index = alphabet.get_index_of_chord_in_alphabet(
                     Chord.from_harte_chord_string(features[frame_index, 13]))
                 chord_index_list.append(chord_index)
@@ -173,36 +168,105 @@ def train(chord_vocabulary: ChordVocabulary, train_songs: Dict[int, Song]) -> HM
     # Normalize transition and init matrices
     init = init / sum(init)
     trans = np.array([trans[i] / sum(trans[i]) for i in range(alphabet_size)])
+    
+    test_trans = np.ones((7, 7))
+    test_trans[0][0] = trans[0][0]
+    test_trans[0][1] = trans[0][3]
+    test_trans[0][2] = trans[0][4]
+    test_trans[0][3] = trans[0][8]
+    test_trans[0][4] = trans[0][10]
+    test_trans[0][5] = trans[0][39]
+    test_trans[0][6] = trans[0][60]
+    test_trans[1][0] = trans[3][0]
+    test_trans[1][1] = trans[3][3]
+    test_trans[1][2] = trans[3][4]
+    test_trans[1][3] = trans[3][8]
+    test_trans[1][4] = trans[3][10]
+    test_trans[1][5] = trans[3][39]
+    test_trans[1][6] = trans[3][60]
+    test_trans[2][0] = trans[4][0]
+    test_trans[2][1] = trans[4][3]
+    test_trans[2][2] = trans[4][4]
+    test_trans[2][3] = trans[4][8]
+    test_trans[2][4] = trans[4][10]
+    test_trans[2][5] = trans[4][39]
+    test_trans[2][6] = trans[4][60]
+    test_trans[3][0] = trans[8][0]
+    test_trans[3][1] = trans[8][3]
+    test_trans[3][2] = trans[8][4]
+    test_trans[3][3] = trans[8][8]
+    test_trans[3][4] = trans[8][10]
+    test_trans[3][5] = trans[8][39]
+    test_trans[3][6] = trans[8][60]
+    test_trans[4][0] = trans[10][0]
+    test_trans[4][1] = trans[10][3]
+    test_trans[4][2] = trans[10][4]
+    test_trans[4][3] = trans[10][8]
+    test_trans[4][4] = trans[10][10]
+    test_trans[4][5] = trans[10][39]
+    test_trans[4][6] = trans[10][60]
+    test_trans[5][0] = trans[39][0]
+    test_trans[5][1] = trans[39][3]
+    test_trans[5][2] = trans[39][4]
+    test_trans[5][3] = trans[39][8]
+    test_trans[5][4] = trans[39][10]
+    test_trans[5][5] = trans[39][39]
+    test_trans[5][6] = trans[39][60]
+    test_trans[6][0] = trans[60][0]
+    test_trans[6][1] = trans[60][3]
+    test_trans[6][2] = trans[60][4]
+    test_trans[6][3] = trans[60][8]
+    test_trans[6][4] = trans[60][10]
+    test_trans[6][5] = trans[60][39]
+    test_trans[6][6] = trans[60][60]
+
+    #calculate empty lines in chroma_beat_matrix_per_chord
+    empty_lines = 0
+    for i in range(alphabet_size):
+        if(len(chroma_beat_matrix_per_chord[i]) == 0):
+            empty_lines += 1
+
+    n_of_chords_in_Matrix = alphabet_size - empty_lines
 
     # Calculate mean and covariance matrices
-    obs_mu = np.zeros((alphabet_size, 12))
-    obs_sigma = np.zeros((alphabet_size, 12, 12))
+    obs_mu = np.zeros((n_of_chords_in_Matrix, 12))
+    obs_sigma = np.zeros((n_of_chords_in_Matrix, 12, 12))
+    #embaixo eh teste
+    new = 7
+    
+    obs_mu = np.zeros((new, 12))
+    obs_sigma = np.zeros((new, 12, 12))
+
+    p = 0
     for i in range(alphabet_size):
         chroma_beat_matrix_per_chord[i] = np.array(chroma_beat_matrix_per_chord[i]).T
-
-        if(len(chroma_beat_matrix_per_chord[i]) != 0):
-
-            obs_mu[i] = np.mean(chroma_beat_matrix_per_chord[i], axis=1)
-            obs_sigma[i] = np.cov(chroma_beat_matrix_per_chord[i], ddof=0)
-        else:
-            obs_mu[i] = 0
-            obs_sigma[i] = np.zeros((12,12))
-
+        if(len(chroma_beat_matrix_per_chord[i]) != 0 and (i==10 or i==39 or i==0 or i==4 or i == 60 or i==8 or i==3)):
+            obs_mu[p] = np.mean(chroma_beat_matrix_per_chord[i], axis=1)
+            obs_sigma[p] = np.cov(chroma_beat_matrix_per_chord[i], ddof=0)
+            p += 1
+        
     # Calculate additional values so we can calculate the emission probability more easily
     twelve_log_two_pi = 12 * np.log(2 * np.pi)
-    log_det_sigma = np.zeros(alphabet_size)
-    sigma_inverse = np.zeros(obs_sigma.shape)
-    for i in range(alphabet_size):
-        if(obs_sigma[i].max() != 0):
-            log_det_sigma[i] = np.log(np.linalg.det(obs_sigma[i]))
-            sigma_inverse[i] = np.mat(np.linalg.pinv(obs_sigma[i]))
-        else:
-            log_det_sigma[i] = 0
-            sigma_inverse[i] = np.zeros((12, 12))
+    log_det_sigma = np.zeros(n_of_chords_in_Matrix)
 
-    return HMMParameters(alphabet=alphabet, trans=trans, init=init, obs_mu=obs_mu, obs_sigma=obs_sigma,
+    log_det_sigma = np.zeros(new)
+
+    sigma_inverse = np.zeros(obs_sigma.shape)
+    for i in range(new):
+        log_det_sigma[i] = np.log(np.linalg.det(obs_sigma[i]))
+        sigma_inverse[i] = np.mat(np.linalg.pinv(obs_sigma[i]))
+    alphabet.alphabet_list = []
+    alphabet.alphabet_list.append('N')
+    alphabet.alphabet_list.append('E')
+    alphabet.alphabet_list.append('D')
+    alphabet.alphabet_list.append('G')
+    alphabet.alphabet_list.append('A')
+    alphabet.alphabet_list.append('Dmaj7')
+    alphabet.alphabet_list.append('Bm7')
+    
+    return HMMParameters(alphabet=alphabet, trans=test_trans, init=init, obs_mu=obs_mu, obs_sigma=obs_sigma,
                          log_det_sigma=log_det_sigma, sigma_inverse=sigma_inverse, twelve_log_two_pi=twelve_log_two_pi,
-                         trained_on_keys=list(train_songs.keys()))
+                         trained_on_keys=list(train_songs.keys()),n_of_chords_in_Matrix=n_of_chords_in_Matrix)
 
 
 def jump_alignment(chords_from_tab_file_path: str, audio_features_path: str, lab_write_path: str,
@@ -227,7 +291,7 @@ def jump_alignment(chords_from_tab_file_path: str, audio_features_path: str, lab
         return None, 0
 
     # Calculate the emission probability matrix for this song
-    alphabet_size = len(hmm_parameters.alphabet.alphabet_list)
+    alphabet_size = len(hmm_parameters.n_of_chords_in_Matrix)
     features = np.load(audio_features_path)[:, 1:13].astype(float)
     nr_beats = features.shape[0]
     log_emission_probability_matrix = np.zeros((alphabet_size, nr_beats))
@@ -332,21 +396,30 @@ def jump_align(chords_from_tab_file_path: str, audio_path: str, lab_write_path: 
     nr_of_chords_in_tab, chord_ids, is_first_in_line, is_last_in_line = \
         _read_tab_file_path(chords_from_tab_file_path, hmm_parameters.alphabet)
 
+    
+
     if nr_of_chords_in_tab < 5:
         return None, 0
 
     # Calculate the emission probability matrix for this song
-    alphabet_size = len(hmm_parameters.alphabet.alphabet_list)
+    alphabet_size = len(hmm_parameters.alphabet.alphabet_list) 
+    #alphabet_size = hmm_parameters.n_of_chords_in_Matrix
+    n_of_chords_in_Matrix = hmm_parameters.n_of_chords_in_Matrix
+
+    #ADICIONEI LINHA ABAIXO
+    n_of_chords_in_Matrix = 7
+
     beat_times, beat_chroma = feature_extractor.get_audio_features(audio_path, sampling_rate=22050, hop_length=256)
     audio_features = np.c_[beat_times[:-1], beat_chroma]
     # features = np.load(audio_features_path)[:, 1:13].astype(float)
     features = audio_features[:, 1:].astype(float)
     nr_beats = features.shape[0]
     log_emission_probability_matrix = np.zeros((alphabet_size, nr_beats))
-    for i in range(alphabet_size):
+    #for i in range(alphabet_size):
+    for i in range(n_of_chords_in_Matrix):
         for b in range(nr_beats):
             om = np.mat(features[b] - hmm_parameters.obs_mu[i])
-            if(hmm_parameters.log_det_sigma[i].max() != 0):
+            if(hmm_parameters.log_det_sigma[i] != float('inf')):
                 log_emission_probability_matrix[i, b] = \
                     (hmm_parameters.log_det_sigma[i] +
                     om * hmm_parameters.sigma_inverse[i] * om.T + hmm_parameters.twelve_log_two_pi) / -2
@@ -356,12 +429,11 @@ def jump_align(chords_from_tab_file_path: str, audio_path: str, lab_write_path: 
     best_transposition, best_g, best_tr, best_last_chord, best_likelihood = -1, None, None, -1, -float('inf')
 
     for semitone_transposition in range(12):
-        # Transpose
+        # Transpose TROQUEI semitone_transposition por 0
         transposed_chord_ids = \
-            np.array([_transpose_chord_label(c_i, semitone_transposition, hmm_parameters.alphabet)
+            np.array([_transpose_chord_label(c_i, 0, hmm_parameters.alphabet)
                       for c_i in chord_ids])
-
-        # Fill altered transition matrix
+        # Fill altered transition matrix        
         altered_transition_matrix = _calculate_altered_transition_matrix(nr_of_chords_in_tab,
                                                                          transposed_chord_ids,
                                                                          is_first_in_line, is_last_in_line,
