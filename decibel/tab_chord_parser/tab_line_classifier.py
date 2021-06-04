@@ -204,9 +204,9 @@ def _is_aaaaaah(word: str) -> bool:
     :param word: Word for which we check if it is 'aaaaah'-like
     :returns: Boolean indicating if word is 'aaaaah'-like
 
-    >>> _is_aaaaaah('aaaaaaah')
+    _is_aaaaaah('aaaaaaah')
     True
-    >>> _is_aaaaaah('aah')
+    _is_aaaaaah('aah')
     False
     """
     previous_char = 'N'
