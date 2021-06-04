@@ -90,7 +90,9 @@ def get_actual_best_midi_lab(song: Song) -> str:
 
 def get_actual_best_tab_lab(song: Song) -> str:
     best_tab_name, _ = filehandler.get_actual_best_tab_for_song(song.key)
+    #if(best_tab_name != -1000):
     return filehandler.get_full_tab_chord_labs_path(best_tab_name)
+    #return filehandler.get_full_tab_chord_labs_path('notapath.txt')
 
 
 def _write_final_labels(final_labels, lab_path, alphabet):
