@@ -12,15 +12,24 @@ CHORD_TEMPLATES_SEVENTHS = [
     ('m7', [0, 3, 7, 10])
 ]
 
+CHORD_TEMPLATES_ALL = [
+    ('sus2', [0, 2, 7]),
+    ('5', [0, 7]),
+    ('9', [0, 2, 4, 7, 10]),
+    ('m9', [0, 2, 3, 7, 10]),
+    ('maj9', [0, 2, 4, 7, 11])
+
+]
+
 CHORD_TEMPLATES_OTHER = [
     ('dim', [0, 3, 6]),
     ('aug', [0, 4, 8]),
-    ('sus2', [0, 2, 7]),
+    
     ('sus4', [0, 5, 7]),
     ('6', [0, 4, 7, 9]),
     ('m6', [0, 3, 7, 9]),
     ('6/9', [0, 2, 4, 7, 9]),
-    ('5', [0, 7]),
+    
     ('9', [0, 2, 4, 7, 10]),
     ('m9', [0, 2, 3, 7, 10]),
     ('maj9', [0, 2, 4, 7, 11]),
@@ -98,4 +107,4 @@ class ChordVocabulary:
         Generate a list of all kinds of chord templates
         :return: List of chord templates
         """
-        return cls('All', CHORD_TEMPLATES_MAJOR_MINOR + CHORD_TEMPLATES_SEVENTHS + CHORD_TEMPLATES_OTHER)
+        return cls('All', CHORD_TEMPLATES_MAJOR_MINOR + CHORD_TEMPLATES_SEVENTHS + CHORD_TEMPLATES_ALL)
