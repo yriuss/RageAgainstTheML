@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from os import path, listdir, makedirs, remove
 import csv
 from typing import List, Tuple
@@ -88,6 +89,7 @@ TAB_INDEX_PATH = _full_path_to('IndexTabs.csv', 'i')
 AUDIO_FOLDER = _full_path_to('Audio', 'i')
 MIDI_FOLDER = _full_path_to('MIDI', 'i')
 TABS_FOLDER = _full_path_to('Tabs', 'i')
+MUSIC_INPUT = _full_path_to('Music Input', 'i')
 
 # Folders to output of audio chord recognition algorithms
 CHORDIFY_FOLDER = _full_path_to('ChordifyLabs', 'i')
@@ -143,7 +145,7 @@ def init_folders():
                       HMM_PARAMETERS_FOLDER,
                       MIDILABS_FOLDERS['bar'], MIDILABS_FOLDERS['beat'], TABLABS_FOLDER,
                       MIDILABS_CHORD_PROBABILITY_FOLDER, LOG_LIKELIHOOD_FOLDER, MIDILABS_ALIGNMENT_SCORE_FOLDER,
-                      RESULT_TABLES, RESULT_VISUALISATIONS]
+                      RESULT_TABLES, RESULT_VISUALISATIONS, MUSIC_INPUT]
     for folder_name in DATA_FUSION_FOLDERS:
         needed_folders.append(DATA_FUSION_FOLDERS[folder_name])
     for needed_folder in needed_folders:
@@ -249,7 +251,7 @@ def get_actual_best_midi_for_song(segmentation_method: str, song_key: int) -> Tu
     :param song_key: Song for which we want to find the best MIDI
     :return: Name and CSR of best MIDI
 
-    >>> get_actual_best_midi_for_song('beat', 1)
+    get_actual_best_midi_for_song('beat', 1)
     ('001-002', 0.7635384045589756)
     """
     method_results = pandas.read_csv(MIDILABS_RESULTS_PATHS[segmentation_method], sep=';',
@@ -278,8 +280,10 @@ def get_actual_best_tab_for_song(song_key: int) -> Tuple[str, float]:
     #print(method_results.song_key)
     #print(song_key)
     #print(method_results_song.wcsr.astype(int).idxmax())
+    #if(method_results_song.empty == False):
     highest_csr_index = method_results_song.wcsr.astype(float).idxmax()
     return tuple(method_results_song.loc[highest_csr_index][['tab_name', 'wcsr']])
+    #return (-1000,0)
 
 
 def _get_log_likelihood_path(song_key: int, tab_file_path: str):
@@ -492,9 +496,9 @@ def get_file_name_from_full_path(full_path: str) -> str:
     :param full_path: The full path we want to extract the file name from
     :return: The file name from our full path
 
-    >>> get_file_name_from_full_path('/media/daphne/Seagate Expansion Drive/Data/MIDI/001-001.mid')
+    get_file_name_from_full_path('/media/daphne/Seagate Expansion Drive/Data/MIDI/001-001.mid')
     '001-001'
-    >>> get_file_name_from_full_path('/media/daphne/Seagate Expansion Drive/Data/MIDI/001-001.txt')
+    get_file_name_from_full_path('/media/daphne/Seagate Expansion Drive/Data/MIDI/001-001.txt')
     '001-001'
     """
     return str(path.basename(full_path).split('.')[0])
