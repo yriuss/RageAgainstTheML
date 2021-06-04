@@ -1,4 +1,3 @@
-# DECIBEL
-A novel system that utilizes multiple symbolic music representations in addition to audio in order to improve ace on popular music.
+# RageAgainstTheML - Moises ai Challenge
 
-Documentation website: https://daphneo.github.io/DECIBEL
+We made some improvements at DECIBEL from daphne Odekerken (https://daphneo.github.io/DECIBEL).
