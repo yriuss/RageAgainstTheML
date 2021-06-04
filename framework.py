@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import json
 from os import path
 
 from sklearn.model_selection import KFold
@@ -11,16 +12,16 @@ from decibel.data_fusion import data_fusion
 from decibel.evaluator import evaluator, result_table_generator, chord_label_visualiser, figure_generator
 from decibel.evaluator.chord_label_visualiser import export_result_image
 from decibel.import_export import filehandler, hmm_parameter_io
+from decibel.import_export.filehandler import MUSIC_INPUT
 from decibel.midi_chord_recognizer import cassette
 from decibel.midi_chord_recognizer.midi_bar_segmenter import MIDIBarSegmenter
 from decibel.midi_chord_recognizer.midi_beat_segmenter import MIDIBeatSegmenter
 from decibel.music_objects.chord_vocabulary import ChordVocabulary
 from decibel.music_objects.song import Song
 from decibel.tab_chord_parser import tab_parser
-
-
+from decibel.file_scraper.tab_scraper import music_input
 NR_CPU = max(mp.cpu_count() - 1, 1)
-
+#NR_CPU = 1
 ########################
 # DATA SET PREPARATION #
 ########################
@@ -28,8 +29,11 @@ NR_CPU = max(mp.cpu_count() - 1, 1)
 # Make sure the file structure is ready
 filehandler.init_folders()
 
+#Prepare inputs
+music_names, tab_names = music_input()
+
 # Retrieve the chord vocabulary. Our experiments are running on a chord vocabulary of major and minor chords.
-chord_vocabulary = ChordVocabulary.generate_chroma_major_minor()
+chord_vocabulary = ChordVocabulary.generate_chroma_all_chords()
 
 # Collect all songs and paths to their audio, MIDI and tab files, chord annotations and ground truth labels
 all_songs = filehandler.get_all_songs()
@@ -79,6 +83,8 @@ for train_indices, test_indices in kf.split(all_songs):
 print('HMM parameter training finished')
 
 
+
+
 ####################
 # DEPLOYMENT PHASE #
 ####################
@@ -114,22 +120,7 @@ def estimate_chords_of_song(song: Song, chord_vocab: ChordVocabulary, hmm_parame
 # pool2.close()
 # pool2.join()
 
-for song_key in all_songs:
-    print(estimate_chords_of_song(all_songs[song_key], chord_vocabulary, hmm_parameter_dict[song_key]))
 
-print('Test phase (calculating labs of all methods) finished')
-
-##############
-# Evaluation #
-##############
-
-# evaluator.evaluate_midis(all_songs)
-evaluator.evaluate_tabs(all_songs)
-
-
-def additional_actual_best_df_round(song: Song, chord_vocab: ChordVocabulary):
-    data_fusion.data_fuse_song_with_actual_best_midi_and_tab(song=song, chord_vocabulary=chord_vocab)
-    return '{} is data fused with actual best MIDI and tab.'.format(str(song))
 
 
 # pool3 = mp.Pool(NR_CPU)
@@ -139,37 +130,42 @@ def additional_actual_best_df_round(song: Song, chord_vocab: ChordVocabulary):
 #                       callback=print)
 # pool3.close()
 # pool3.join()
-for song_key in all_songs:
-    try:
-        print(additional_actual_best_df_round(all_songs[song_key], chord_vocabulary))
-    except:
-        print("Error - not ",song_key," available")
 
-evaluator.evaluate_song_based(all_songs)
+# testing songs
+for i in range(1):
+    test_song = Song(music_names[i], music_names[i], music_names[i], '', path.join(MUSIC_INPUT, str(music_names[i]) + '.mp3'), '')
+    for tab_name in tab_names[i]:
+        test_song.add_tab_path(path.join(filehandler.TABS_FOLDER, tab_name+'.txt'))
+    tab_parser.classify_all_tabs_of_song(song=test_song)
+    jump_alignment.predict_single_song(song=test_song, hmm_parameters=hmm_parameters)
+    data_fusion.data_fuse_song(song=test_song, chord_vocabulary=chord_vocabulary)
 
-print('Evaluation finished!')
 
-###############################
-# Generate tables and figures #
-###############################
 
-# Generate lab visualisations for each song and audio method
-# pool4 = mp.Pool(NR_CPU)
-for song_key in all_songs:
-    for audio_method in ['CHF_2017'] + filehandler.MIREX_SUBMISSION_NAMES:
-        print(chord_label_visualiser.export_result_image(
-            all_songs[song_key], chord_vocabulary, False, True, audio_method, True
-        ))
-#         pool4.apply_async(chord_label_visualiser.export_result_image,
-#                           args=(all_songs[song_key], chord_vocabulary, True, True, audio_method, True),
-#                           callback=print)
-# pool4.close()
-# pool4.join()
-print("Visualisation finished!")
+def output_labs_to_json(path_to_lab,music_name):
 
-# Extra lines for testing purpose.
-# test_song = Song('0', 'test', 'test', '', filehandler.get_full_audio_path(0), '')
-# test_song.add_tab_path(path.join(filehandler.TABS_FOLDER, 'test_Chords.txt'))
-# tab_parser.classify_all_tabs_of_song(song=test_song)
-# jump_alignment.predict_single_song(song=test_song, hmm_parameters=hmm_parameters)
-# data_fusion.data_fuse_song(song=test_song, chord_vocabulary=chord_vocabulary)
+  music = music_name
+
+  data = {}
+
+  data[music] = []
+
+  with open(path_to_lab, 'r') as f:
+    for i,x in enumerate(f):
+
+      aux = x.split(" ")
+
+      aux[2] = aux[2].replace("\n","")
+
+      data[music].append({"current_beat": int(i),
+                      "current_beat_time": round(float(aux[1]),2),
+                      "estimated_chord": aux[2]})
+
+  #json_dump = json.dump(data)
+
+  with open('/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/output_'+music_names[0].replace(" ","_")+'.json', 'w') as outfile:
+    json.dump(data, outfile)
+
+output_labs_to_json("/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/Data/Results/Labs/TabLabs/" + tab_names[0][0] + '.txt',music_names[0].replace(" ","_"))
+
+print("Test done!")
