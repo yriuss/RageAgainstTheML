@@ -132,7 +132,7 @@ def estimate_chords_of_song(song: Song, chord_vocab: ChordVocabulary, hmm_parame
 # pool3.join()
 
 # testing songs
-for i in range(1):
+for i,_ in enumerate(music_names):
     test_song = Song(music_names[i], music_names[i], music_names[i], '', path.join(MUSIC_INPUT, str(music_names[i]) + '.mp3'), '')
     for tab_name in tab_names[i]:
         test_song.add_tab_path(path.join(filehandler.TABS_FOLDER, tab_name+'.txt'))
@@ -142,13 +142,9 @@ for i in range(1):
 
 
 
-def output_labs_to_json(path_to_lab,music_name):
+def output_labs_to_json(path_to_lab,cnt):
 
-  music = music_name
-
-  data = {}
-
-  data[music] = []
+  data = []
 
   with open(path_to_lab, 'r') as f:
     for i,x in enumerate(f):
@@ -157,15 +153,18 @@ def output_labs_to_json(path_to_lab,music_name):
 
       aux[2] = aux[2].replace("\n","")
 
-      data[music].append({"current_beat": int(i),
+      data.append({"current_beat": int(i),
                       "current_beat_time": round(float(aux[1]),2),
                       "estimated_chord": aux[2]})
 
-  #json_dump = json.dump(data)
-
-  with open('/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/output_'+music_names[0].replace(" ","_")+'.json', 'w') as outfile:
+  with open('/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/output_'+music_names[cnt].replace(" ","_")+'.json', 'w') as outfile:
     json.dump(data, outfile)
 
-output_labs_to_json("/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/Data/Results/Labs/TabLabs/" + tab_names[0][0] + '.txt',music_names[0].replace(" ","_"))
+print(tab_names, music_names)
+
+for cnt,_ in enumerate(tab_names):
+    output_labs_to_json("/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/Data/Results/Labs/TabLabs/" + tab_names[cnt][0] + '.txt',cnt)
+    print(tab_names[cnt][0])
+    
 
 print("Test done!")
