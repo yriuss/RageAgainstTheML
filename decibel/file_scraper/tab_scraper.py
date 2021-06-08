@@ -60,11 +60,24 @@ def download_data_set_from_csv(csv_path: str, tab_directory: str):
 
     print(str(nr_successful) + ' tab files were downloaded successfully. ' + str(nr_unsuccessful) + ' failed.')
 
+def get_cifra_club_content(tab_url):
+    site_code = requests.get(tab_url)
+    beginning = "<pre>"
+    end = "</pre>"
+    start_index = site_code.text.find(beginning)
+    end_idx = site_code.text.find(end)
+    content = site_code.text[start_index+5:end_idx]
+    filtered_content = content.replace("[tab]","").replace("[/tab]","").replace("[ch]","").replace("[/ch]","").replace("\\n","\n").replace("\\r","\r").replace("<b>","").replace("</b>","")
+    
+    return filtered_content
 
 def download_tab(tab_url):
     site_code = requests.get(tab_url)
     last_slash_idx = tab_url.rfind('/')
     tab_name = tab_url[last_slash_idx + 1:]
+    if tab_name == "":
+        last_slash_idx = tab_url[0:len(tab_url) - 1].rfind('/')
+        tab_name = tab_url[last_slash_idx + 1:len(tab_url) - 1]
     beginning = "content&quot;:&quot;"
     end = "&quot;"
     start_index = site_code.text.find(beginning) + len(beginning) + 1
@@ -72,6 +85,8 @@ def download_tab(tab_url):
     end_index = site_code.text[start_index:].find(end) + start_index
     content = site_code.text[start_index:end_index]
     filtered_content = content.replace("[tab]","").replace("[/tab]","").replace("[ch]","").replace("[/ch]","").replace("\\n","\n").replace("\\r","\r")
+    if(filtered_content == ""):
+        filtered_content = get_cifra_club_content(tab_url)
     if( not path.isfile(path.join(TABS_FOLDER,tab_name+".txt"))):
         with open(path.join(TABS_FOLDER,tab_name+".txt"), 'w') as f:
                 f.write(filtered_content)
