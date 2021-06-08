@@ -25,7 +25,7 @@ def music_input():
             links = crawler(mp3_name)
             tab_names = []
             for i in range(len(links)):
-                tab_names.append(download_tab(links[i]))
+                tab_names.append(download_tab(links[i],mp3_name))
             all_tab_names.append(tab_names)
     return result, all_tab_names
 
@@ -71,7 +71,10 @@ def get_cifra_club_content(tab_url):
     
     return filtered_content
 
-def download_tab(tab_url):
+def download_tab(tab_url,mp3_name):
+    if(type(tab_url) != str):
+        tab_url = str(tab_url[0])
+    print(tab_url)
     site_code = requests.get(tab_url)
     last_slash_idx = tab_url.rfind('/')
     tab_name = tab_url[last_slash_idx + 1:]
@@ -87,7 +90,7 @@ def download_tab(tab_url):
     filtered_content = content.replace("[tab]","").replace("[/tab]","").replace("[ch]","").replace("[/ch]","").replace("\\n","\n").replace("\\r","\r")
     if(filtered_content == ""):
         filtered_content = get_cifra_club_content(tab_url)
-    if( not path.isfile(path.join(TABS_FOLDER,tab_name+".txt"))):
-        with open(path.join(TABS_FOLDER,tab_name+".txt"), 'w') as f:
+    if( not path.isfile(path.join(TABS_FOLDER,mp3_name+".txt"))):
+        with open(path.join(TABS_FOLDER,mp3_name+".txt"), 'w') as f:
                 f.write(filtered_content)
-    return tab_name
+    return mp3_name
