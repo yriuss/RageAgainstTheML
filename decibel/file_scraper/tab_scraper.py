@@ -74,7 +74,7 @@ def get_cifra_club_content(tab_url):
 def download_tab(tab_url,mp3_name):
     if(type(tab_url) != str):
         tab_url = str(tab_url[0])
-    print(tab_url)
+    #print(tab_url)
     site_code = requests.get(tab_url)
     last_slash_idx = tab_url.rfind('/')
     tab_name = tab_url[last_slash_idx + 1:]
