@@ -32,8 +32,7 @@ def crawler(file_name):
     output_links = []
     site_code = requests.get(link_list[0] + file_name)
     output_links.append(exctract_links(site_code.text, 0))
-
-    site_code = requests.get(link_list[1] + file_name + "Cifra Club")
+    site_code = requests.get(link_list[1] + file_name.replace("_"," ").replace("-"," ") + "Cifra Club")
     output_links.append(exctract_links(site_code.text, 1))
     return [x for x in output_links if x]#output_links
 
