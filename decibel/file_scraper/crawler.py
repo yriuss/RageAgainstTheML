@@ -10,7 +10,9 @@ def exctract_links(site_code, link_idx):
         found_idx = site_code.find("https://tabs.ultimate-guitar.com/tab/")
     else:
         found_idx = site_code.find("cifraclub.com.br")
-        return site_code[found_idx-12:].partition('&')[0]
+        site_url_filtered = site_code[found_idx-12:].partition('&')[0]
+        site_url_filtered = site_url_filtered.partition('=')[2]
+        return site_url_filtered
         
     while(found_idx != -1):
         exctracted_link = site_code[found_idx:].partition('&')[0]
