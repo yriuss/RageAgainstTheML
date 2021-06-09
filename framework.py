@@ -154,7 +154,7 @@ def output_labs_to_json(path_to_lab,cnt):
       aux[2] = aux[2].replace("\n","")
 
       data.append({"current_beat": int(i),
-                      "current_beat_time": round(float(aux[1]),2),
+                      "current_beat_time": round(float(aux[0]),2),
                       "estimated_chord": aux[2]})
 
   with open('/content/drive/MyDrive/RageAgainstTheML_Moises_Challenge/DECIBEL/output_'+music_names[cnt].replace(" ","_")+'.json', 'w') as outfile:
